@@ -2,6 +2,8 @@ $kind: http-request
 description: ""
 url: "{{base_url}}wallet/transfer"
 method: POST
+headers:
+  Idempotency-Key: transfer-unique-007
 body:
   type: formdata
   content:
@@ -11,6 +13,6 @@ body:
       disabled: false
     - type: text
       key: amount_paise
-      value: "5000"
+      value: "6000000"
       disabled: false
 order: 6000

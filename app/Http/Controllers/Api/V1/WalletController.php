@@ -4,27 +4,27 @@ namespace App\Http\Controllers\Api\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Validator};
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 use App\Http\Controllers\Controller;
-use App\Models\{User, Wallet, WalletTransaction};
+use App\Http\Requests\TransferRequest;
+use App\Http\Resources\{TransactionResource, WalletResource};
+use App\Services\WalletTransferService;
+use App\Exceptions\WalletException;
+use App\Models\WalletTransaction;
 
 class WalletController extends Controller
 {
+    public function __construct(
+        private WalletTransferService $transferService
+    ) {}
+
     public function index(Request $request)
     {
-        $wallet = $request->user()->wallet;
-
-        return response()->json([
-            'status' => true,
-            'balance_paise' => $wallet->balance,
-            'balance_rupees' => number_format(
-                $wallet->balance / 100,
-                2,
-                '.',
-                ''
-            ),
-        ]);
+        return new WalletResource(
+            $request->user()->wallet
+        );
     }
 
     public function deposit(Request $request)
@@ -36,7 +36,7 @@ class WalletController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -49,102 +49,47 @@ class WalletController extends Controller
 
             $amount = (int) $request->amount_paise;
 
-            $wallet->increment('balance', $amount);
+            $wallet->balance += $amount;
+            $wallet->save();
 
-            return $wallet->transactions()->create([
+            return WalletTransaction::create([
+                'wallet_id' => $wallet->id,
                 'type' => 'deposit',
                 'amount' => $amount,
+                'balance_after' => $wallet->balance,
+                'reference_id' => (string) Str::uuid(),
             ]);
         });
 
         return response()->json([
             'status' => true,
-            'message' => 'Money deposited successfully',
-            'transaction' => $transaction,
-            'balance_paise' => $request->user()->wallet->fresh()->balance,
+            'message' => 'Deposit successful',
+            'data' => new TransactionResource($transaction),
         ], 201);
     }
 
-    public function transfer(Request $request)
+    public function transfer(TransferRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
-            'amount_paise' => 'required|integer|min:1',
-        ]);
+        $key = $request->header('Idempotency-Key');
 
-        if ($validator->fails()) {
+        if (!$key || strlen($key) > 255) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Valid Idempotency-Key header is required',
+            ], 400);
         }
 
-        $sender = $request->user();
-        $receiver = User::where('email', $request->email)->firstOrFail();
-
-        if ($sender->id === $receiver->id) {
-            return response()->json([
-                'status' => false,
-                'message' => 'You cannot transfer money to yourself'
-            ], 422);
-        }
-
-        $amount = (int) $request->amount_paise;
-
-        $result = DB::transaction(function () use (
-            $sender,
-            $receiver,
-            $amount
-        ) {
-
-            // Lock wallets in consistent ID order
-            $wallets = Wallet::whereIn('user_id', [
-                $sender->id,
-                $receiver->id
-            ])
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get()
-            ->keyBy('user_id');
-
-            $senderWallet = $wallets->get($sender->id);
-            $receiverWallet = $wallets->get($receiver->id);
-
-            if (!$senderWallet || !$receiverWallet) {
-                throw ValidationException::withMessages([
-                    'wallet' => ['Wallet not found.']
-                ]);
-            }
-
-            if ($senderWallet->balance < $amount) {
-                throw ValidationException::withMessages([
-                    'amount_paise' => ['Insufficient wallet balance.']
-                ]);
-            }
-
-            $senderWallet->decrement('balance', $amount);
-            $receiverWallet->increment('balance', $amount);
-
-            $senderWallet->transactions()->create([
-                'type' => 'transfer_out',
-                'amount' => $amount,
-                'counterparty_user_id' => $receiver->id,
-            ]);
-
-            $receiverWallet->transactions()->create([
-                'type' => 'transfer_in',
-                'amount' => $amount,
-                'counterparty_user_id' => $sender->id,
-            ]);
-
-            return $senderWallet->fresh()->balance;
-        });
+        $result = $this->transferService->transfer(
+            $request->user(),
+            $request->email,
+            (int) $request->amount_paise,
+            $key
+        );
 
         return response()->json([
             'status' => true,
-            'message' => 'Money transferred successfully',
-            'amount_paise' => $amount,
-            'balance_paise' => $result,
+            'message' => 'Transfer successful',
+            'data' => $result,
         ]);
     }
 
@@ -160,12 +105,11 @@ class WalletController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $query = $request->user()
-            ->wallet
+        $query = $request->user()->wallet
             ->transactions()
             ->with('counterparty:id,name,email')
             ->latest();
@@ -182,13 +126,8 @@ class WalletController extends Controller
             $query->whereDate('created_at', '<=', $request->to_date);
         }
 
-        $transactions = $query->paginate(
-            $request->input('per_page', 10)
+        return TransactionResource::collection(
+            $query->paginate($request->integer('per_page', 10))
         );
-
-        return response()->json([
-            'status' => true,
-            'transactions' => $transactions,
-        ]);
     }
 }

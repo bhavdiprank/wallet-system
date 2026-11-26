@@ -14,7 +14,7 @@ return new class extends Migration
 
             $table->foreignId('wallet_id')
                 ->constrained()
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
 
             $table->foreignId('counterparty_user_id')
                 ->nullable()
@@ -24,14 +24,17 @@ return new class extends Migration
             $table->enum('type', [
                 'deposit',
                 'transfer_in',
-                'transfer_out'
+                'transfer_out',
             ]);
 
             $table->unsignedBigInteger('amount');
+            $table->unsignedBigInteger('balance_after');
+
+            $table->uuid('reference_id')->index();
 
             $table->timestamps();
 
-            $table->index(['wallet_id', 'type', 'created_at']);
+            $table->index(['wallet_id', 'created_at']);
         });
     }
 

@@ -7,6 +7,6 @@ body:
   content:
     - type: text
       key: amount_paise
-      value: "10000"
+      value: "5000000"
       disabled: false
 order: 5000

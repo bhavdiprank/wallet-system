@@ -12,6 +12,8 @@ class WalletTransaction extends Model
         'counterparty_user_id',
         'type',
         'amount',
+        'balance_after',
+        'reference_id',
     ];
 
     protected function casts(): array
@@ -19,6 +21,21 @@ class WalletTransaction extends Model
         return [
             'amount' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function () {
+            throw new \LogicException(
+                'Wallet transactions cannot be updated.'
+            );
+        });
+
+        static::deleting(function () {
+            throw new \LogicException(
+                'Wallet transactions cannot be deleted.'
+            );
+        });
     }
 
     public function wallet(): BelongsTo

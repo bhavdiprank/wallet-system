@@ -15,8 +15,20 @@ return Application::configure(basePath: dirname(__DIR__))
          $middleware->redirectGuestsTo('/');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        
         $exceptions->shouldRenderJsonWhen(
         fn (Request $request, \Throwable $e) =>
             $request->is('api/*') || $request->expectsJson()
         );
+
+        $exceptions->render(function (
+        \App\Exceptions\WalletException $e,
+        Request $request
+        ) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], $e->status);
+        });
+
     })->create();

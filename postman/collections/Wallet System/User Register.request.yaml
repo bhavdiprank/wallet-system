@@ -7,12 +7,12 @@ body:
   content:
     - type: text
       key: name
-      value: Test
+      value: Bhavdip
       description: ""
       disabled: false
     - type: text
       key: email
-      value: test@gmail.com
+      value: bhavdip@gmail.com
       description: ""
       disabled: false
     - type: text
