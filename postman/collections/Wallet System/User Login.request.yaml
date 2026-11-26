@@ -1,0 +1,18 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}login"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: email
+      value: bhavdip@gmail.com
+      description: ""
+      disabled: false
+    - type: text
+      key: password
+      value: "123456"
+      description: ""
+      disabled: false
+order: 2000

@@ -31,6 +31,10 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        $user->wallet()->create([
+            'balance' => 0
+        ]);
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
@@ -41,7 +45,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // Login
+    
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -75,10 +79,14 @@ class AuthController extends Controller
         ]);
     }
 
-    // Logout
+
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
 
         return response()->json([
             'status' => true,

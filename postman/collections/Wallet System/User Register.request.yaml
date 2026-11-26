@@ -1,0 +1,23 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}register"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: name
+      value: Test
+      description: ""
+      disabled: false
+    - type: text
+      key: email
+      value: test@gmail.com
+      description: ""
+      disabled: false
+    - type: text
+      key: password
+      value: "123456"
+      description: ""
+      disabled: false
+order: 1000

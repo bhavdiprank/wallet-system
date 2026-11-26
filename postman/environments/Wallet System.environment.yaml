@@ -1,2 +1,6 @@
 name: Wallet System
-values: []
+values:
+  - key: base_url
+    value: ''
+  - key: auth_token
+    value: ''

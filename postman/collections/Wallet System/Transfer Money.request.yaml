@@ -1,0 +1,16 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}wallet/transfer"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: email
+      value: test@gmail.com
+      disabled: false
+    - type: text
+      key: amount_paise
+      value: "5000"
+      disabled: false
+order: 6000

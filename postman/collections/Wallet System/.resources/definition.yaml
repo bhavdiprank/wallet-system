@@ -1,0 +1,9 @@
+$kind: collection
+variables:
+  base_url: ""
+auth:
+  - id: 7c0da9f7-67d8-43f5-aeac-f7e852f091c7
+    type: bearer
+    name: Bearer Token
+    credentials:
+      token: 9|NLwaoFf3cE2mUdaFv2imz4iKomSybV7Pa69SiKkJfa870e95

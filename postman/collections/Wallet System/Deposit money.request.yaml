@@ -1,0 +1,12 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}wallet/deposit"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: amount_paise
+      value: "10000"
+      disabled: false
+order: 5000

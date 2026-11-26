@@ -1,0 +1,12 @@
+$kind: http-request
+description: ""
+url: "{{base_url}}logout"
+method: POST
+body:
+  type: json
+  content: ""
+auth:
+  type: inherit
+  credentials:
+    id: 7c0da9f7-67d8-43f5-aeac-f7e852f091c7
+order: 3000
